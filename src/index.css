@@ -10,13 +10,12 @@
   --color-neon-red: #ff3b30;
   --color-neon-green: #34c759;
   --color-dark-bg: #000000;
-  --color-card-bg: rgba(28, 28, 30, 0.7);
+  --color-card-bg: rgba(255, 255, 255, 0.06);
 }
 
 @layer base {
   body {
     @apply bg-dark-bg text-white antialiased overflow-hidden selection:bg-ios-blue/30;
-    background-image: radial-gradient(circle at top right, #1c1c2e, #000);
     height: 100vh;
   }
 }
