@@ -5,42 +5,90 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Rocket, AlertOctagon, TrendingUp, RefreshCcw, Plus } from 'lucide-react';
+import { Rocket, AlertOctagon, RefreshCcw, Plus, Loader2 } from 'lucide-react';
+import { createClient } from '@supabase/supabase-js';
 
-const META_PONTO_EQUILIBRIO = 100.00;
+// Configuration from your request
+const SB_URL = import.meta.env.VITE_SUPABASE_URL || 'https://ozszexhkdiggsxymmtgo.supabase.co';
+const SB_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96c3pleGhrZGlnZ3NjeW1tdGdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0MDY5NzUsImV4cCI6MjA5Mjk4Mjk3NX0.C_XrfLUWQ13coyzgFzqaKhP7pjaFZ5-sJIctqrr7MCk';
+const supabase = createClient(SB_URL, SB_KEY);
 
 export default function App() {
   const [revenue, setRevenue] = useState(0);
-  const [showConfetti, setShowConfetti] = useState(false);
+  const [metaPE, setMetaPE] = useState(100); // Default fallback
+  const [loading, setLoading] = useState(true);
+  const [registering, setRegistering] = useState(false);
 
-  const registerSale = useCallback((value: number) => {
-    setRevenue((prev) => {
-      const next = prev + value;
-      // Kodular integration if applicable
-      if ((window as any).AppInventor) {
-        (window as any).AppInventor.setWebViewString("venda_registrada");
-        if (next >= META_PONTO_EQUILIBRIO && prev < META_PONTO_EQUILIBRIO) {
-          (window as any).AppInventor.setWebViewString("ponto_equilibrio_batido");
-        }
+  // 1. CARREGA O PONTO DE EQUILÍBRIO DA TABELA 'METAS'
+  const fetchMeta = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.from('metas').select('valor_pe').single();
+      if (data && !error) {
+        setMetaPE(parseFloat(data.valor_pe));
       }
-      return next;
-    });
+    } catch (e) {
+      console.error("Erro meta:", e);
+    }
   }, []);
 
-  const reset = () => {
-    if (confirm("Deseja resetar o fluxo diário?")) {
-      setRevenue(0);
+  // 2. SOMA AS VENDAS DE HOJE
+  const fetchDailyRevenue = useCallback(async () => {
+    try {
+      const hoje = new Date().toISOString().split('T')[0];
+      const { data, error } = await supabase
+        .from('vendas')
+        .select('valor')
+        .gte('criado_em', hoje);
+
+      if (!error && data) {
+        const total = data.reduce((acc, item) => acc + parseFloat(item.valor), 0);
+        setRevenue(total);
+      }
+    } catch (err) {
+      console.error("Error fetching revenue:", err);
     }
-  };
+  }, []);
 
-  const progress = Math.min((revenue / META_PONTO_EQUILIBRIO) * 100, 100);
-  const isProfitActive = revenue >= META_PONTO_EQUILIBRIO;
-
+  // Initialization
   useEffect(() => {
-    if (isProfitActive) {
-      setShowConfetti(true);
+    const init = async () => {
+      setLoading(true);
+      await Promise.all([fetchMeta(), fetchDailyRevenue()]);
+      setLoading(false);
+    };
+    init();
+  }, [fetchMeta, fetchDailyRevenue]);
+
+  // 3. REGISTA A VENDA NO BANCO E ATUALIZA A TELA
+  const registerSale = useCallback(async (value: number) => {
+    setRegistering(true);
+    try {
+      const { error } = await supabase.from('vendas').insert([{ valor: value }]);
+      
+      if (!error) {
+        await fetchDailyRevenue();
+        
+        // Kodular/AppInventor integration
+        if ((window as any).AppInventor) {
+          const ui = (window as any).AppInventor;
+          ui.setWebViewString("venda_ok");
+          
+          if (revenue + value >= metaPE && revenue < metaPE) {
+            ui.setWebViewString("ponto_equilibrio_batido");
+          }
+        }
+      } else {
+        alert("Erro ao gravar: " + error.message);
+      }
+    } catch (err) {
+      console.error("Error registering sale:", err);
+    } finally {
+      setRegistering(false);
     }
-  }, [isProfitActive]);
+  }, [fetchDailyRevenue, revenue, metaPE]);
+
+  const progress = Math.min((revenue / metaPE) * 100, 100);
+  const isProfitActive = revenue >= metaPE;
 
   return (
     <main id="app-container" className="h-screen w-full max-w-md mx-auto flex flex-col p-6 relative">
@@ -53,9 +101,6 @@ export default function App() {
         >
           LUCRO ÁGIL
         </motion.h1>
-        <p className="text-[10px] text-neon-blue uppercase tracking-[0.3em] font-semibold mt-1 opacity-80">
-          Gestão Inteligente
-        </p>
       </header>
 
       {/* Alert Badge */}
@@ -66,43 +111,51 @@ export default function App() {
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
-            className="bg-neon-red/15 border border-neon-red text-neon-red py-3 px-4 rounded-2xl text-xs font-bold text-center mb-6 neon-shadow-red flex items-center justify-center gap-2"
+            className="bg-neon-red/15 border border-neon-red text-neon-red py-3 px-4 rounded-2xl text-[13px] font-bold text-center mb-6 neon-shadow-red flex items-center justify-center gap-2"
           >
             <AlertOctagon size={16} />
-            ALERTA: CUSTOS FIXOS EM ABERTO
+            EM BUSCA DO PONTO DE EQUILÍBRIO
           </motion.div>
         ) : (
           <motion.div
             key="success"
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-neon-green/15 border border-neon-green text-neon-green py-3 px-4 rounded-2xl text-xs font-bold text-center mb-6 neon-shadow-green flex items-center justify-center gap-2"
+            className="bg-neon-green/15 border border-neon-green text-neon-green py-3 px-4 rounded-2xl text-[13px] font-bold text-center mb-6 neon-shadow-green flex items-center justify-center gap-2"
+            style={{ textShadow: '0 0 10px #34c759' }}
           >
             <Rocket size={16} />
-            FOGUETE DECOLOU: LUCRO ATIVO
+            🚀 MODO LUCRO ATIVO
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Main Metric Card */}
       <section className="glass rounded-[32px] p-8 mb-6 shadow-2xl relative overflow-hidden">
-        <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-2">
+        <p className="text-[12px] text-gray-400 uppercase font-bold tracking-widest mb-2">
           Faturamento Hoje
         </p>
-        <motion.div 
-          className="text-5xl font-light text-white mb-6 tabular-nums"
-          key={revenue}
-          initial={{ scale: 1.05 }}
-          animate={{ scale: 1 }}
-        >
-          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(revenue)}
-        </motion.div>
+        
+        {loading ? (
+          <div className="h-[60px] flex items-center">
+            <Loader2 className="animate-spin text-neon-blue" size={32} />
+          </div>
+        ) : (
+          <motion.div 
+            className="text-5xl font-light text-white mb-6 tabular-nums"
+            key={revenue}
+            initial={{ scale: 1.05 }}
+            animate={{ scale: 1 }}
+          >
+            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(revenue)}
+          </motion.div>
+        )}
 
-        <div className="flex justify-between items-end text-xs mb-3">
+        <div className="flex justify-between items-end text-[12px] mb-3">
           <div className="flex flex-col gap-1">
-            <span className="text-gray-500 font-medium uppercase tracking-tighter">Ponto de Equilíbrio</span>
-            <span className="text-gray-300 font-mono">
-              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(META_PONTO_EQUILIBRIO)}
+            <span className="text-gray-500 font-bold uppercase tracking-tighter">Meta Diária (P.E)</span>
+            <span className="text-gray-300 font-medium">
+              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(metaPE)}
             </span>
           </div>
           <motion.span 
@@ -134,7 +187,7 @@ export default function App() {
               animate={{ opacity: 1 }}
               className="text-xs text-gray-400 font-medium italic"
             >
-              Aguardando registro de vendas para atingir a meta...
+              Aguardando registro de vendas...
             </motion.p>
           ) : (
             <motion.p
@@ -143,8 +196,8 @@ export default function App() {
               animate={{ opacity: 1, scale: 1 }}
               className="text-xs text-neon-green font-bold uppercase tracking-wide leading-relaxed"
             >
-              🚀 MODO PASTEL CHINÊS ATIVO:<br />
-              Libere descontos agressivos agora!
+              🚀 MODO PASTEL CHINÊS:<br />
+              Meta batida! Foque no lucro agora.
             </motion.p>
           )}
         </AnimatePresence>
@@ -154,22 +207,29 @@ export default function App() {
       <div className="grow" />
 
       {/* Actions */}
-      <div className="flex flex-col gap-4 mb-2">
+      <div className="flex flex-col gap-4 mb-10">
         <motion.button
           whileTap={{ scale: 0.96 }}
+          disabled={registering || loading}
           onClick={() => registerSale(2.00)}
-          className="bg-ios-blue text-white py-5 rounded-2xl text-lg font-semibold shadow-[0_10px_30px_rgba(0,122,255,0.3)] flex items-center justify-center gap-3 active:brightness-90 transition-all"
+          className="bg-ios-blue text-white py-[22px] rounded-3xl text-lg font-semibold shadow-[0_10px_20px_rgba(0,122,255,0.3)] flex items-center justify-center gap-3 active:brightness-90 transition-all disabled:opacity-50"
         >
-          <Plus size={20} />
+          {registering ? <Loader2 className="animate-spin" /> : <Plus size={20} />}
           REGISTRAR VENDA (R$ 2,00)
         </motion.button>
         
         <button 
-          onClick={reset}
+          onClick={async () => {
+             if (confirm("Deseja atualizar os dados?")) {
+               setLoading(true);
+               await fetchDailyRevenue();
+               setLoading(false);
+             }
+          }}
           className="text-gray-500 text-sm font-medium hover:text-gray-300 transition-colors py-2 flex items-center justify-center gap-2"
         >
           <RefreshCcw size={14} />
-          Limpar Dados do Dia
+          Atualizar Fluxo
         </button>
       </div>
 
@@ -179,3 +239,5 @@ export default function App() {
     </main>
   );
 }
+
+
