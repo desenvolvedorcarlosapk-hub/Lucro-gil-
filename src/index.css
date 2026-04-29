@@ -36,3 +36,13 @@
 .status-badge-success {
   @apply bg-neon-green/5 border border-neon-green/40 text-neon-green text-[11px] font-semibold py-2 px-3 rounded-xl text-center uppercase tracking-wider;
 }
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
