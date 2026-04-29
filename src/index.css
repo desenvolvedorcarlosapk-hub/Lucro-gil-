@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;400;600;800&family=JetBrains+Mono:wght@400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;800&family=JetBrains+Mono:wght@400&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -9,28 +9,30 @@
   --color-neon-blue: #00f3ff;
   --color-neon-red: #ff3b30;
   --color-neon-green: #34c759;
+  --color-dark-bg: #000000;
+  --color-card-bg: rgba(28, 28, 30, 0.7);
 }
 
 @layer base {
   body {
-    @apply bg-black text-white antialiased overflow-hidden selection:bg-ios-blue/30;
-    background: radial-gradient(circle at top right, #1c1c2e, #000000);
+    @apply bg-dark-bg text-white antialiased overflow-hidden selection:bg-ios-blue/30;
+    background-image: radial-gradient(circle at top right, #1c1c2e, #000);
     height: 100vh;
   }
 }
 
-.glass {
-  @apply bg-white/10 backdrop-blur-3xl border border-white/15;
+.glass-clean {
+  @apply bg-card-bg backdrop-blur-[20px] border border-white/10;
 }
 
 .neon-shadow-blue {
   box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
 }
 
-.neon-shadow-red {
-  box-shadow: 0 0 15px rgba(255, 59, 48, 0.2);
+.status-badge-pending {
+  @apply bg-red-500/10 border border-red-500/30 text-[#ff3b30] text-[11px] font-semibold py-2 px-3 rounded-xl text-center uppercase tracking-wider;
 }
 
-.neon-shadow-green {
-  box-shadow: 0 0 20px rgba(52, 199, 89, 0.3);
+.status-badge-success {
+  @apply bg-neon-green/5 border border-neon-green/40 text-neon-green text-[11px] font-semibold py-2 px-3 rounded-xl text-center uppercase tracking-wider;
 }

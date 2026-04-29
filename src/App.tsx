@@ -71,7 +71,7 @@ export default function App() {
         // Kodular/AppInventor integration
         if ((window as any).AppInventor) {
           const ui = (window as any).AppInventor;
-          ui.setWebViewString("venda_registrada");
+          ui.setWebViewString("venda_ok");
           
           if (revenue + value >= metaPE && revenue < metaPE) {
             ui.setWebViewString("meta_batida");
@@ -91,152 +91,82 @@ export default function App() {
   const isProfitActive = revenue >= metaPE;
 
   return (
-    <main id="app-container" className="h-screen w-full max-w-md mx-auto flex flex-col p-6 relative">
+    <main id="app-container" className="h-screen w-full max-w-[400px] mx-auto flex flex-col p-5 gap-5 relative">
       {/* Header */}
-      <header className="text-center mt-6 mb-10">
+      <header className="text-center pt-5">
         <motion.h1 
-          className="text-4xl font-extrabold tracking-tighter text-white drop-shadow-[0_0_15px_rgba(0,243,255,0.8)]"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
+          className="text-3xl font-extrabold tracking-tight text-white drop-shadow-[0_0_20px_rgba(0,243,255,0.3)]"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
         >
           LUCRO ÁGIL
         </motion.h1>
       </header>
 
-      {/* Alert Badge */}
-      <AnimatePresence mode="wait">
-        {!isProfitActive ? (
-          <motion.div
-            key="alert"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            className="bg-neon-red/15 border border-neon-red text-neon-red py-3 px-4 rounded-2xl text-[13px] font-bold text-center mb-6 neon-shadow-red flex items-center justify-center gap-2"
-          >
-            <AlertOctagon size={16} />
-            ESTADO: CUSTO FIXO PENDENTE
-          </motion.div>
-        ) : (
-          <motion.div
-            key="success"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-neon-green/15 border border-neon-green text-neon-green py-3 px-4 rounded-2xl text-[13px] font-bold text-center mb-6 neon-shadow-green flex items-center justify-center gap-2"
-            style={{ textShadow: '0 0 10px #34c759' }}
-          >
-            <Rocket size={16} />
-            🚀 MODO LUCRO: PASTEL CHINÊS ATIVO
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Status Badge */}
+      <motion.div 
+        key={isProfitActive ? 'active' : 'pending'}
+        className={isProfitActive ? 'status-badge-success' : 'status-badge-pending'}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        {isProfitActive ? '🚀 MODO LUCRO ATIVO' : 'Custos Pendentes'}
+      </motion.div>
 
-      {/* Main Metric Card */}
-      <section className="glass rounded-[32px] p-8 mb-6 shadow-2xl relative overflow-hidden">
-        <p className="text-[12px] text-gray-400 uppercase font-bold tracking-widest mb-2">
-          Faturamento Hoje
+      {/* Main Card */}
+      <section className="glass-clean rounded-[24px] py-8 px-5 text-center shadow-xl relative overflow-hidden">
+        <p className="text-[13px] text-gray-400 uppercase font-medium tracking-wide mb-2.5">
+          FATURAMENTO HOJE
         </p>
         
         {loading ? (
-          <div className="h-[60px] flex items-center">
+          <div className="h-[78px] flex items-center justify-center">
             <Loader2 className="animate-spin text-neon-blue" size={32} />
           </div>
         ) : (
           <motion.div 
-            className="text-5xl font-light text-white mb-6 tabular-nums"
+            className="text-[52px] font-light text-white mb-6 tracking-tight tabular-nums"
             key={revenue}
-            initial={{ scale: 1.05 }}
-            animate={{ scale: 1 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
           >
             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(revenue)}
           </motion.div>
         )}
 
-        <div className="flex justify-between items-end text-[12px] mb-3">
-          <div className="flex flex-col gap-1">
-            <span className="text-gray-500 font-bold uppercase tracking-tighter">Progresso Meta</span>
-            <span className="text-gray-300 font-medium">
-              Meta: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(metaPE)}
-            </span>
+        <div className="w-full">
+          <div className="flex justify-between items-center text-[12px] font-medium text-neon-blue mb-2">
+            <span>Progresso</span>
+            <span id="display-percent">{Math.floor((revenue / metaPE) * 100)}%</span>
           </div>
-          <motion.span 
-            className={`font-bold text-lg ${isProfitActive ? 'text-neon-green' : 'text-neon-blue'}`}
-            animate={{ color: isProfitActive ? '#34c759' : '#00f3ff' }}
-          >
-            {Math.floor(progress)}%
-          </motion.span>
+          <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+            <motion.div 
+              className="h-full"
+              initial={{ width: 0 }}
+              animate={{ 
+                width: `${progress}%`,
+                backgroundColor: isProfitActive ? '#34c759' : '#00f3ff',
+                boxShadow: isProfitActive ? '0 0 15px #34c759' : '0 0 15px #00f3ff'
+              }}
+              transition={{ type: 'spring', stiffness: 50, damping: 20 }}
+            />
+          </div>
         </div>
-
-
-        <div className="h-2.5 w-full bg-white/10 rounded-full overflow-hidden border border-white/5">
-          <motion.div 
-            className={`h-full ${isProfitActive ? 'bg-gradient-to-r from-neon-green to-white' : 'bg-gradient-to-r from-neon-blue to-white'}`}
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            transition={{ type: 'spring', stiffness: 50, damping: 20 }}
-            style={{ boxShadow: isProfitActive ? '0 0 15px #34c759' : '0 0 15px #00f3ff' }}
-          />
-        </div>
-      </section>
-
-      {/* Instruction Card */}
-      <section className="glass rounded-3xl p-4 text-center mb-6 min-h-[60px] flex items-center justify-center">
-        <AnimatePresence mode="wait">
-          {!isProfitActive ? (
-            <motion.p
-              key="waiting"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-xs text-gray-400 font-medium italic"
-            >
-              Aguardando registro de vendas...
-            </motion.p>
-          ) : (
-            <motion.p
-              key="active"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="text-xs text-neon-green font-bold uppercase tracking-wide leading-relaxed"
-            >
-              🚀 MODO PASTEL CHINÊS:<br />
-              Meta batida! Foque no lucro agora.
-            </motion.p>
-          )}
-        </AnimatePresence>
       </section>
 
       {/* Content Spacer */}
       <div className="grow" />
 
-      {/* Actions */}
-      <div className="flex flex-col gap-4 mb-10">
-        <motion.button
-          whileTap={{ scale: 0.96 }}
-          disabled={registering || loading}
-          onClick={() => registerSale(2.00)}
-          className="bg-ios-blue text-white py-[22px] rounded-3xl text-lg font-semibold shadow-[0_10px_20px_rgba(0,122,255,0.3)] flex items-center justify-center gap-3 active:brightness-90 transition-all disabled:opacity-50"
-        >
-          {registering ? <Loader2 className="animate-spin" /> : <Plus size={20} />}
-          REGISTRAR VENDA (R$ 2,00)
-        </motion.button>
-        
-        <button 
-          onClick={async () => {
-             if (confirm("Deseja atualizar os dados?")) {
-               setLoading(true);
-               await fetchDailyRevenue();
-               setLoading(false);
-             }
-          }}
-          className="text-gray-500 text-sm font-medium hover:text-gray-300 transition-colors py-2 flex items-center justify-center gap-2"
-        >
-          <RefreshCcw size={14} />
-          Atualizar Fluxo
-        </button>
-      </div>
-
-      {/* Decorative Blur Backgrounds */}
-      <div className="absolute -top-10 -left-10 w-40 h-40 bg-ios-blue/20 blur-[80px] rounded-full pointer-events-none" />
-      <div className="absolute top-1/2 -right-10 w-40 h-40 bg-neon-green/10 blur-[80px] rounded-full pointer-events-none" />
+      {/* Action Button */}
+      <motion.button
+        whileTap={{ scale: 0.97 }}
+        disabled={registering || loading}
+        onClick={() => registerSale(2.00)}
+        className="bg-ios-blue text-white py-5 rounded-[20px] text-[17px] font-semibold border-none shadow-[0_10px_25px_rgba(0,122,255,0.4)] flex items-center justify-center gap-3 active:opacity-90 transition-all disabled:opacity-50 mb-7"
+      >
+        {registering ? <Loader2 className="animate-spin" /> : <Plus size={20} />}
+        REGISTRAR VENDA (+ R$ 2,00)
+      </motion.button>
     </main>
   );
 }
