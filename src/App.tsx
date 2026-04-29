@@ -71,10 +71,10 @@ export default function App() {
         // Kodular/AppInventor integration
         if ((window as any).AppInventor) {
           const ui = (window as any).AppInventor;
-          ui.setWebViewString("venda_ok");
+          ui.setWebViewString("venda_registrada");
           
           if (revenue + value >= metaPE && revenue < metaPE) {
-            ui.setWebViewString("ponto_equilibrio_batido");
+            ui.setWebViewString("meta_batida");
           }
         }
       } else {
@@ -114,7 +114,7 @@ export default function App() {
             className="bg-neon-red/15 border border-neon-red text-neon-red py-3 px-4 rounded-2xl text-[13px] font-bold text-center mb-6 neon-shadow-red flex items-center justify-center gap-2"
           >
             <AlertOctagon size={16} />
-            EM BUSCA DO PONTO DE EQUILÍBRIO
+            ESTADO: CUSTO FIXO PENDENTE
           </motion.div>
         ) : (
           <motion.div
@@ -125,7 +125,7 @@ export default function App() {
             style={{ textShadow: '0 0 10px #34c759' }}
           >
             <Rocket size={16} />
-            🚀 MODO LUCRO ATIVO
+            🚀 MODO LUCRO: PASTEL CHINÊS ATIVO
           </motion.div>
         )}
       </AnimatePresence>
@@ -153,9 +153,9 @@ export default function App() {
 
         <div className="flex justify-between items-end text-[12px] mb-3">
           <div className="flex flex-col gap-1">
-            <span className="text-gray-500 font-bold uppercase tracking-tighter">Meta Diária (P.E)</span>
+            <span className="text-gray-500 font-bold uppercase tracking-tighter">Progresso Meta</span>
             <span className="text-gray-300 font-medium">
-              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(metaPE)}
+              Meta: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(metaPE)}
             </span>
           </div>
           <motion.span 
@@ -165,6 +165,7 @@ export default function App() {
             {Math.floor(progress)}%
           </motion.span>
         </div>
+
 
         <div className="h-2.5 w-full bg-white/10 rounded-full overflow-hidden border border-white/5">
           <motion.div 
